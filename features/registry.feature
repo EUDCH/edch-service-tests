@@ -17,26 +17,35 @@ Feature: EDCH Registry baseline
     Then the TLS certificate is valid for at least 14 days
 
   @feature
-  Scenario: Organisation registration page is available
+  Scenario: Organisation registration page renders
     When I GET "/register"
     Then the response status is 200
-    And the response body contains "register"
+    And the page title contains "Register"
 
   @feature
-  Scenario: Forum is reachable
+  Scenario: Forum renders
     When I GET "/forum"
     Then the response status is 200
-    And the response body contains "forum"
+    And the page title contains "Forum"
 
   @feature
-  Scenario: Organisations listing is available
+  Scenario: Organisations listing renders
     When I GET "/organisations-view"
     Then the response status is 200
+    # Full title keeps this distinct from "Organisations map | EDCH Registry"
+    And the page title contains "Organisations | EDCH Registry"
 
   @feature
-  Scenario: Organisations map is available
+  Scenario: Organisations map renders
     When I GET "/organisations-map"
     Then the response status is 200
+    And the page title contains "Organisations map"
+
+  @feature
+  Scenario: Documentation page renders
+    When I GET "/documentation"
+    Then the response status is 200
+    And the page title contains "Documentation"
 
   @drupal
   Scenario: Login route works
