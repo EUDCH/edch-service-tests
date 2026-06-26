@@ -17,6 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
+      # Non-public test/local base URLs come from repo variables, not the committed inventory.
+      # Unset → each service falls back to its public prod URL.
+      EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
+      EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

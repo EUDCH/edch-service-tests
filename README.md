@@ -4,9 +4,9 @@ Black-box feature baselines for the **EDCH services**, runnable locally and in C
 service has a readable spec of what it must do; the suite checks it over HTTP (fast, every
 run) with a thin browser layer for the few genuinely interactive flows.
 
-This is the CI-grade, team-visible sibling of the on-demand `_SERVICEREVIEW` check. It does
-**not** apply updates or touch the sites — it verifies their public behaviour after a change
-(a PCSS/EIFL upgrade, a content/theme/org change, a config tweak).
+It is the versioned, CI-runnable counterpart to ad-hoc on-demand checks. It does **not** apply
+updates or touch the sites — it verifies their public behaviour after a change (a hosting-provider
+upgrade, a content/theme/org change, a config tweak).
 
 ## Layout
 
@@ -36,9 +36,16 @@ too (`npm install && npm test`) — the scripts call `cucumber-js` directly.
 
 ### Environments
 
-`EDCH_ENV` selects which base URL each service is hit at, from `config/services.json`:
-`local` (DDEV copy), `test` (PCSS test instance), or `prod` (default). A service with no URL
-for the chosen env falls back to its prod URL.
+`EDCH_ENV` selects which base URL each service is hit at: `prod` (default, public URLs in
+`config/services.json`), `test`, or `local`. Non-public `test`/`local` base URLs are **not**
+committed — supply them per service via `EDCH_<NAME>_<ENV>_URL`:
+
+```bash
+EDCH_ENV=test EDCH_REGISTRY_TEST_URL=https://… EDCH_CAP_TEST_URL=https://… bun run test
+```
+
+In CI, set these as GitHub Actions repository variables. A service with no URL for the chosen
+env falls back to its prod URL.
 
 ### Tags
 
@@ -55,9 +62,8 @@ for the chosen env falls back to its prod URL.
 
 `browser/` holds Playwright specs for flows HTTP can't verify (submitting the org
 registration form, JS search). It runs in a **separate, gated CI job** (manual + nightly) so
-browser flake never blocks a pull request. In CI the browser layer must be Playwright;
-Interceptor (used elsewhere for local verification) needs a live logged-in session and cannot
-run headless in a pipeline.
+browser flake never blocks a pull request. The CI browser layer uses Playwright because a real
+logged-in browser session cannot run headless in a pipeline.
 
 ## CI
 

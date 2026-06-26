@@ -18,8 +18,11 @@ class EdchWorld extends World {
     const svc = inventory.services.find((s) => s.name === name);
     if (!svc) throw new Error(`Unknown service "${name}" — not in config/services.json`);
     this.service = svc;
-    this.baseUrl = svc.envs[this.env] || svc.envs.prod;
-    if (!this.baseUrl) throw new Error(`Service "${name}" has no base URL for env "${this.env}" (and no prod fallback)`);
+    // Resolve base URL: env-var override first (keeps non-public test/local hosts out of the
+    // repo), then the committed inventory, then the prod fallback.
+    const overrideKey = `EDCH_${name.toUpperCase().replace(/-/g, "_")}_${this.env.toUpperCase()}_URL`;
+    this.baseUrl = process.env[overrideKey] || svc.envs[this.env] || svc.envs.prod;
+    if (!this.baseUrl) throw new Error(`Service "${name}" has no base URL for env "${this.env}" (set ${overrideKey} or add it to config/services.json)`);
   }
 
   // Timeout + one retry on a transient failure — environments like the PCSS test instance

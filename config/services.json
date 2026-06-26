@@ -1,5 +1,5 @@
 {
-  "_comment": "EDCH service inventory. Source of truth for the test suite. Add a service = one entry. envs maps environment name -> base URL; a missing env falls back to prod. tech drives which tech-specific steps apply (drupal adds login/asset checks).",
+  "_comment": "EDCH service inventory and source of truth for the suite. Add a service = one entry. 'envs' maps an environment name to a base URL. Only PUBLIC prod URLs live here; non-public instance URLs (e.g. a partner test/staging host or a local DDEV copy) are supplied at runtime via env vars named EDCH_<NAME>_<ENV>_URL (e.g. EDCH_REGISTRY_TEST_URL) — or GitHub Actions repository variables — so internal infra stays out of this public repo. A missing env falls back to prod.",
   "defaultEnv": "prod",
   "services": [
     {
@@ -7,22 +7,14 @@
       "label": "EDCH Registry",
       "tech": "drupal",
       "operator": "OPERAS / PCSS",
-      "envs": {
-        "prod": "https://registry.edch.eu",
-        "test": "https://edch-registry.apps.bst2.paas.psnc.pl",
-        "local": "https://registry.ddev.site"
-      }
+      "envs": { "prod": "https://registry.edch.eu" }
     },
     {
       "name": "cap",
       "label": "EDCH CAP",
       "tech": "drupal",
       "operator": "OPERAS / PCSS",
-      "envs": {
-        "prod": "https://edch.eu",
-        "test": "https://edch.apps.bst2.paas.psnc.pl",
-        "local": "https://cap.ddev.site"
-      }
+      "envs": { "prod": "https://edch.eu" }
     },
     {
       "name": "resources",

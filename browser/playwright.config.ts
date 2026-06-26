@@ -9,7 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const inv = JSON.parse(readFileSync(join(here, "..", "config", "services.json"), "utf8"));
 const env = process.env.EDCH_ENV || inv.defaultEnv || "prod";
 const registry = inv.services.find((s: { name: string }) => s.name === "registry");
-const baseURL = registry.envs[env] || registry.envs.prod;
+// Same resolution order as the HTTP world: env-var override, then inventory, then prod.
+const baseURL = process.env[`EDCH_REGISTRY_${env.toUpperCase()}_URL`] || registry.envs[env] || registry.envs.prod;
 
 export default defineConfig({
   testDir: "specs",
