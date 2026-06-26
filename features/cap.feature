@@ -44,7 +44,7 @@ Feature: EDCH CAP baseline
   Scenario: News and events page renders
     When I GET "/news-events"
     Then the response status is 200
-    And the page title contains "News"
+    And the page title contains "News & Events"
 
   @feature
   Scenario: Publishing tools page renders
