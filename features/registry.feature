@@ -32,7 +32,8 @@ Feature: EDCH Registry baseline
   Scenario: Organisations listing renders
     When I GET "/organisations-view"
     Then the response status is 200
-    And the page title contains "Organisations"
+    # Full title keeps this distinct from "Organisations map | EDCH Registry"
+    And the page title contains "Organisations | EDCH Registry"
 
   @feature
   Scenario: Organisations map renders
