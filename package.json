@@ -1,0 +1,17 @@
+{
+  "name": "edch-service-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Black-box HTTP + browser feature baselines for the EDCH services, runnable locally and in CI.",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:smoke": "cucumber-js --tags @smoke",
+    "test:registry": "cucumber-js features/registry.feature",
+    "browser": "playwright test --config browser/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "@playwright/test": "^1.48.0"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "_comment": "EDCH service inventory. Source of truth for the test suite. Add a service = one entry. envs maps environment name -> base URL; a missing env falls back to prod. tech drives which tech-specific steps apply (drupal adds login/asset checks).",
+  "defaultEnv": "prod",
+  "services": [
+    {
+      "name": "registry",
+      "label": "EDCH Registry",
+      "tech": "drupal",
+      "operator": "OPERAS / PCSS",
+      "envs": {
+        "prod": "https://registry.edch.eu",
+        "test": "https://edch-registry.apps.bst2.paas.psnc.pl",
+        "local": "https://registry.ddev.site"
+      }
+    },
+    {
+      "name": "cap",
+      "label": "EDCH CAP",
+      "tech": "drupal",
+      "operator": "OPERAS / PCSS",
+      "envs": {
+        "prod": "https://edch.eu",
+        "test": "https://edch.apps.bst2.paas.psnc.pl",
+        "local": "https://cap.ddev.site"
+      }
+    },
+    {
+      "name": "resources",
+      "label": "EDCH Resources & Guidelines",
+      "tech": "drupal",
+      "operator": "EIFL",
+      "envs": { "prod": "https://resources.edch.eu" }
+    },
+    {
+      "name": "ddh",
+      "label": "Diamond Discovery Hub",
+      "tech": "web",
+      "operator": "ICM / UGOE / DOAJ",
+      "envs": { "prod": "https://ddh.edch.eu" }
+    }
+  ]
+}

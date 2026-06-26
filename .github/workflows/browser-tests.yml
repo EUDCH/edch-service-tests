@@ -1,0 +1,27 @@
+name: Browser service tests (interactive flows)
+
+# Gated: manual + nightly only, so browser flake never blocks a pull request.
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment to test (prod | test | local)
+        type: choice
+        options: [prod, test, local]
+        default: prod
+  schedule:
+    - cron: "33 2 * * *" # nightly 02:33 UTC
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    env:
+      EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run browser

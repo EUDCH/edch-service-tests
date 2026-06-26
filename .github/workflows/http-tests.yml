@@ -1,0 +1,26 @@
+name: HTTP service tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment to test (prod | test | local)
+        type: choice
+        options: [prod, test, local]
+        default: prod
+  schedule:
+    - cron: "17 6 * * *" # daily 06:17 UTC
+
+jobs:
+  http:
+    runs-on: ubuntu-latest
+    env:
+      EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun test
