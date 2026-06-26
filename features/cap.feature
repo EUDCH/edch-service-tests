@@ -56,3 +56,4 @@ Feature: EDCH CAP baseline
   Scenario: Login route works
     When I GET "/user/login"
     Then the response status is 200
+    And the page title contains "Log in"
