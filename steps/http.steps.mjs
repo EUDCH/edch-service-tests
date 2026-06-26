@@ -56,3 +56,16 @@ Then("the page title contains {string}", function (text) {
     `Page title of ${this.response.url} is "${title}", expected to contain "${text}"`,
   );
 });
+
+// Stronger than "contains" when the page name also appears in the site-name suffix (Drupal's
+// "<page> | <site>" template). Asserting the title STARTS WITH the page name distinguishes the
+// page from siblings whose title merely ends in the same site name — e.g. "Guidelines | …" vs a
+// homepage "Resources and Guidelines | …".
+Then("the page title starts with {string}", function (text) {
+  const m = this.response.body.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const title = m ? decodeEntities(m[1]).trim() : "";
+  assert.ok(
+    title.toLowerCase().startsWith(text.toLowerCase()),
+    `Page title of ${this.response.url} is "${title}", expected to start with "${text}"`,
+  );
+});

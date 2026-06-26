@@ -21,7 +21,9 @@ Feature: EDCH Resources & Guidelines baseline
   Scenario: Guidelines page renders
     When I GET "/guidelines"
     Then the response status is 200
-    And the page title contains "Guidelines"
+    # "Guidelines" is in the site name, so every title contains it — assert the title STARTS
+    # with it to stay distinct from the homepage "Resources and Guidelines | …".
+    And the page title starts with "Guidelines"
 
   @feature
   Scenario: Diamond OA essentials page renders
