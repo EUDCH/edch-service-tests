@@ -17,37 +17,40 @@ Feature: EDCH CAP baseline
     Then the TLS certificate is valid for at least 14 days
 
   @feature
-  Scenario: About page is available
+  Scenario: About page renders
     When I GET "/about"
     Then the response status is 200
-    And the response body contains "about"
+    And the page title contains "About"
 
   @feature
-  Scenario: Governance page is available
+  Scenario: Governance page renders
     When I GET "/governance"
     Then the response status is 200
-    And the response body contains "governance"
+    And the page title contains "Governance"
 
   @feature
-  Scenario: Related projects page is available
+  Scenario: Related projects page renders
     When I GET "/related-projects"
     Then the response status is 200
+    And the page title contains "Related Projects"
 
   @feature
-  Scenario: Community page is available
+  Scenario: Community page renders
     When I GET "/community"
     Then the response status is 200
+    And the page title contains "Community"
 
   @feature
-  Scenario: News and events page is available
+  Scenario: News and events page renders
     When I GET "/news-events"
     Then the response status is 200
-    And the response body contains "news"
+    And the page title contains "News"
 
   @feature
-  Scenario: Publishing tools page is available
+  Scenario: Publishing tools page renders
     When I GET "/publishing-tools"
     Then the response status is 200
+    And the page title contains "Publishing"
 
   @drupal
   Scenario: Login route works

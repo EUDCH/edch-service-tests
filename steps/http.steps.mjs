@@ -23,3 +23,15 @@ Then("the response body contains {string}", function (text) {
     `Body of ${this.response.url} does not contain "${text}"`,
   );
 });
+
+// Page-specific assertion: the <title> uniquely identifies the rendered page. Stronger than a
+// body substring (which matches shared nav/footer text) and it catches a silent redirect to a
+// different page — the homepage title differs, so a redirect home fails this check.
+Then("the page title contains {string}", function (text) {
+  const m = this.response.body.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const title = m ? m[1].trim() : "";
+  assert.ok(
+    title.toLowerCase().includes(text.toLowerCase()),
+    `Page title of ${this.response.url} is "${title}", expected to contain "${text}"`,
+  );
+});
