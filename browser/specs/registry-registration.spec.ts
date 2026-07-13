@@ -6,8 +6,11 @@ import { test, expect } from "@playwright/test";
 // scenarios; the bulk of the baseline lives in the HTTP features.
 test.describe("Registry — organisation registration", () => {
   test("registration form renders", async ({ page }) => {
-    await page.goto("/register");
-    await expect(page).toHaveTitle(/EDCH Registry|Register/i);
+    // The account/organisation form lives at the standard Drupal user-registration
+    // route. `/register` is a content landing page (no form) that links here via
+    // `/login-register`, so target `/user/register` directly.
+    await page.goto("/user/register");
+    await expect(page).toHaveTitle(/EDCH Registry|Register|Create new account/i);
     // A form should be present on the registration page.
     await expect(page.locator("form")).toHaveCount(1, { timeout: 10_000 });
   });
