@@ -17,6 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
+      # Non-public base URLs come from repo variables, as in http-tests.yml. Specs that submit
+      # data assert on the resolved hostname and refuse to run against a production host, so a
+      # missing variable here fails the job rather than writing to the live site.
+      EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
+      EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
+      # Unset → the authenticated flows skip; the rest of the browser layer still runs.
+      EDCH_REGISTRY_TEST_USER: ${{ secrets.EDCH_REGISTRY_TEST_USER }}
+      EDCH_REGISTRY_TEST_PASSWORD: ${{ secrets.EDCH_REGISTRY_TEST_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

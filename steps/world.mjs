@@ -5,13 +5,24 @@ const inventory = loadInventory();
 // Environment under test: local DDEV copy, PCSS test instance, or prod. Default from inventory.
 export const ENV = process.env.EDCH_ENV || inventory.defaultEnv || "prod";
 
+// Hosts that must never receive test data. Derived from the inventory's own prod URLs, so
+// adding a service can't accidentally leave its production host off this list.
+export function prodHostnames(inv = inventory) {
+  return new Set(
+    inv.services
+      .map((s) => s.envs?.prod)
+      .filter(Boolean)
+      .map((u) => new URL(u).hostname),
+  );
+}
+
 class EdchWorld extends World {
   constructor(options) {
     super(options);
     this.env = ENV;
     this.service = null;
     this.baseUrl = null;
-    this.response = null; // { status, body, url }
+    this.response = null; // { status, body, url, headers }
   }
 
   useService(name) {
@@ -25,19 +36,44 @@ class EdchWorld extends World {
     if (!this.baseUrl) throw new Error(`Service "${name}" has no base URL for env "${this.env}" (set ${overrideKey} or add it to config/services.json)`);
   }
 
+  // Fail closed before anything that would write. `envs[env]` falls back to prod when the
+  // per-env override is unset, so "EDCH_ENV=test" alone is NOT evidence of a non-prod target
+  // — a missing EDCH_<NAME>_TEST_URL silently aims the run at the live site. Assert on the
+  // resolved hostname, which is the only thing that can't lie.
+  assertNotProduction(what = "this step") {
+    if (!this.baseUrl) throw new Error(`${what}: no service selected`);
+    const host = new URL(this.baseUrl).hostname;
+    if (prodHostnames().has(host)) {
+      throw new Error(
+        `${what} refuses to run against production host "${host}". ` +
+          `EDCH_ENV=${this.env} resolved to ${this.baseUrl} — set EDCH_${this.service.name.toUpperCase()}_${this.env.toUpperCase()}_URL to a non-production instance.`,
+      );
+    }
+  }
+
   // Timeout + one retry on a transient failure — environments like the PCSS test instance
   // are slow, and a plain fetch with no timeout flakes. A clean HTTP error (4xx/5xx) does not
   // throw, so it is reported, not retried. Redirects are followed.
-  async get(path, { timeoutMs = 20000, retries = 1 } = {}) {
+  // `follow: false` keeps the 3xx itself observable. A redirect that is *part of the contract*
+  // (a module route that bounces anonymous users to the login form) can only be asserted if the
+  // redirect is not silently followed — following it turns a 302 into the login page's 200 and
+  // the assertion stops discriminating.
+  async get(path, { timeoutMs = 20000, retries = 1, follow = true } = {}) {
     const url = new URL(path, this.baseUrl).href;
     let lastErr;
     for (let attempt = 0; attempt <= retries; attempt++) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
-        const res = await fetch(url, { redirect: "follow", signal: ctrl.signal, headers: { "User-Agent": "edch-service-tests/1.0" } });
+        const res = await fetch(url, { redirect: follow ? "follow" : "manual", signal: ctrl.signal, headers: { "User-Agent": "edch-service-tests/1.0" } });
         const body = await res.text();
-        this.response = { status: res.status, body, url };
+        this.response = {
+          status: res.status,
+          body,
+          url,
+          contentType: res.headers.get("content-type") ?? "",
+          location: res.headers.get("location") ?? "",
+        };
         return this.response;
       } catch (e) {
         lastErr = e;

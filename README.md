@@ -47,10 +47,49 @@ EDCH_ENV=test EDCH_REGISTRY_TEST_URL=https://… EDCH_CAP_TEST_URL=https://… b
 In CI, set these as GitHub Actions repository variables. A service with no URL for the chosen
 env falls back to its prod URL.
 
+> **That fallback is why anything which writes must guard on the hostname.** `EDCH_ENV=test`
+> with `EDCH_REGISTRY_TEST_URL` unset silently resolves to the live site, so the env *name* is
+> not evidence of the target. Scenarios and specs that submit data call
+> `assertNotProduction()` (`steps/world.mjs`, `browser/support/guards.ts`), which compares the
+> resolved hostname against the prod URLs in the inventory and throws. It fails loudly rather
+> than skipping, so a misconfigured run cannot pass quietly.
+
+Optional variables:
+
+| Variable | Effect |
+|---|---|
+| `EDCH_EXPECT_DRUPAL_MAJOR` | Assert the exact Drupal major version. Unset, the suite only requires `>= 10`, because prod and the test instance sit on different majors during a migration. Set it to `11` against a migrated instance to make it a hard gate. |
+| `EDCH_REGISTRY_TEST_USER` / `EDCH_REGISTRY_TEST_PASSWORD` | Enable the authenticated browser flows. Unset, they skip. |
+
 ### Tags
 
 `@smoke` (up + TLS + render, all services), `@feature` (service-specific features),
 `@drupal`, `@tls`, `@interactive`. Run a slice: `bunx cucumber-js --tags '@smoke'`.
+
+Also in use on the Registry: `@module` (a custom module's observable behaviour), `@external`
+(depends on a third-party API, so allowed to be the flaky one — exclude with
+`--tags 'not @external'`), `@not-installed` (asserts a module route is *absent*, recording
+deployment reality rather than an aspiration).
+
+## Registry custom modules
+
+The Registry runs six custom modules from
+[`EUDCH/registry-drupal-modules`](https://github.com/EUDCH/registry-drupal-modules). Release
+1.3.0 declared `core_version_requirement: ^10 || ^11` on all six; declaring D11 support is not
+the same as exercising it, so `features/registry.feature` covers what each module actually
+does over HTTP, and `browser/specs/` covers what needs a real browser.
+
+| Module | Covered by | Notes |
+|---|---|---|
+| `organization_validation` | HTTP + browser | Confirmation page, the login gate on `/check-organisation`, the POST-only submit route, and the post-login redirect |
+| `webform_geonames` | HTTP + browser | Its Drupal endpoint is healthy; the browser-side autocomplete is a documented expected failure — see the spec |
+| `email_protect` | HTTP | Asserts the `(at)` substitution *and* that no raw address or `mailto:` survives |
+| `computed_address` | HTTP | Combined city/country computed field on an organisation profile |
+| `org_moderation_sync` | **not covered** | Not installed. Even installed, no black-box assertion isolates it: `organization_validation` duplicates its moderation logic for the same bundle, so toggling it changes nothing observable. The duplication is the finding |
+| `organization_listing` | absence only | Not installed on prod or test; the suite asserts its route 404s |
+
+Two of the six therefore have no functional coverage. That is a property of the deployment and
+of the modules, not an omission in the suite — a test that cannot fail is not a test.
 
 ## Add a service or a check
 

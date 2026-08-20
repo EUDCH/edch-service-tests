@@ -21,6 +21,9 @@ jobs:
       # Unset → each service falls back to its public prod URL.
       EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
       EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
+      # Optional exact-version gate. Set the repo variable to 11 once the migrated instance is
+      # the test target; unset, the suite only asserts Drupal >= 10 so prod stays green.
+      EDCH_EXPECT_DRUPAL_MAJOR: ${{ vars.EDCH_EXPECT_DRUPAL_MAJOR }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
