@@ -15,16 +15,6 @@ on:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    env:
-      EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
-      # Non-public base URLs come from repo variables, as in http-tests.yml. Specs that submit
-      # data assert on the resolved hostname and refuse to run against a production host, so a
-      # missing variable here fails the job rather than writing to the live site.
-      EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
-      EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
-      # Unset → the authenticated flows skip; the rest of the browser layer still runs.
-      EDCH_REGISTRY_TEST_USER: ${{ secrets.EDCH_REGISTRY_TEST_USER }}
-      EDCH_REGISTRY_TEST_PASSWORD: ${{ secrets.EDCH_REGISTRY_TEST_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -32,4 +22,24 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
-      - run: bun run browser
+      # The @writes submission spec refuses to run against a production host (its guard throws),
+      # so on prod — including the nightly schedule, where github.event.inputs.env is null — run
+      # the read-only browser coverage only. A manual dispatch with env=test runs the write spec.
+      #
+      # Credentials and non-public base URLs live on the test step only, so bun install and
+      # playwright install never have them in their environment (a postinstall script in any
+      # dependency could otherwise read them).
+      - name: Browser tests (test env — all specs)
+        if: github.event.inputs.env == 'test'
+        run: bunx playwright test --config browser/playwright.config.ts
+        env:
+          EDCH_ENV: test
+          EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
+          EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
+          EDCH_REGISTRY_TEST_USER: ${{ secrets.EDCH_REGISTRY_TEST_USER }}
+          EDCH_REGISTRY_TEST_PASSWORD: ${{ secrets.EDCH_REGISTRY_TEST_PASSWORD }}
+      - name: Browser tests (prod / default — read-only, skip writes)
+        if: github.event.inputs.env != 'test'
+        run: bunx playwright test --config browser/playwright.config.ts --grep-invert "@writes"
+        env:
+          EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}

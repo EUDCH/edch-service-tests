@@ -30,7 +30,13 @@ export function prodHostnames(): Set<string> {
 export function assertNotProduction(baseURL: string | undefined, what: string): string {
   if (!baseURL) throw new Error(`${what}: no baseURL resolved`);
   const host = new URL(baseURL).hostname;
-  if (prodHostnames().has(host)) {
+  const prod = prodHostnames();
+  // If the inventory shape ever changes (a renamed key, a service with no prod entry) this set
+  // goes empty and every host would pass — including production. Fail closed instead.
+  if (prod.size === 0) {
+    throw new Error(`${what}: could not derive any production hostname from the inventory; refusing to proceed`);
+  }
+  if (prod.has(host)) {
     throw new Error(
       `${what} refuses to run against production host "${host}". ` +
         `Set EDCH_ENV and the matching EDCH_<SERVICE>_<ENV>_URL to a non-production instance.`,
@@ -52,10 +58,12 @@ export function assertNotProduction(baseURL: string | undefined, what: string): 
  */
 export async function dismissConsent(page: import("@playwright/test").Page): Promise<void> {
   const accept = page.locator("#klaro button.cm-btn-accept");
-  if (await accept.count()) {
-    await accept.first().click();
-    await page.locator("#klaro .cm-bg").waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
-  }
+  if (!(await accept.count())) return; // no dialog: consent stored, or Klaro not on this service
+  await accept.first().click();
+  // If the overlay is still there after accepting, the helper has not done its job and every
+  // later click will be swallowed. Surface that rather than swallow it — a bare .catch() here
+  // would hide exactly the failure this helper exists to prevent.
+  await page.locator("#klaro .cm-bg").waitFor({ state: "hidden", timeout: 10_000 });
 }
 
 /** A marker that makes every artifact this suite creates attributable and greppable. */

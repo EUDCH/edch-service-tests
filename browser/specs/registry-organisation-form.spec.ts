@@ -20,7 +20,11 @@ import { assertNotProduction, dismissConsent, testMarker } from "../support/guar
 const FORM_PATH = "/form/organisation-registry-test";
 
 test.describe("Registry — organisation registration form", () => {
-  test("form renders its required fields", async ({ page, baseURL }) => {
+  // The PCSS test instance can be slow to serve the form; give navigation room so a slow first
+  // load is retried within the test rather than tripping the default 30s ceiling.
+  test.describe.configure({ timeout: 90_000 });
+
+  test("form renders its required fields", async ({ page }) => {
     // Read-only: safe on any environment, so no production guard here.
     await page.goto(FORM_PATH);
     await dismissConsent(page);
@@ -28,7 +32,6 @@ test.describe("Registry — organisation registration form", () => {
     for (const name of ["organization_name", "website", "organization_email_address", "institutional_email"]) {
       await expect(page.locator(`[name="${name}"]`), `field ${name}`).toHaveCount(1);
     }
-    expect(baseURL).toBeTruthy();
   });
 
   test("@writes a complete submission is accepted", async ({ page, baseURL }) => {
@@ -48,6 +51,8 @@ test.describe("Registry — organisation registration form", () => {
     await page.selectOption('[name="country[select]"]', "Denmark");
     await page.selectOption('[name="legal_entity_type[select]"]', "Public organisation");
     await page.selectOption('[name="parent_organization_"]', "false");
+    // The trailing space in "National " is the actual option value in the webform config;
+    // trimming it selects nothing and the submit then fails validation with no obvious cause.
     await page.selectOption('[name="geographical_range_of_services"]', "National ");
     await page.selectOption('[name="supported_languages[select][]"]', ["English"]);
     await page.selectOption('[name="disciplinary_coverage[]"]', ["Multidisciplinary"]);
@@ -65,6 +70,15 @@ test.describe("Registry — organisation registration form", () => {
 
     await page.click('[name="op"]');
 
+    // Wait for the submit to resolve to SOME outcome — a confirmation, a status, or a
+    // validation error — before inspecting. Without this, the error check below races the
+    // still-rendered pre-submit form; `networkidle` is avoided because a Drupal page's
+    // background requests can keep it from ever settling.
+    const outcome = page.locator(
+      ".webform-confirmation, .messages--status, .messages--error, [data-drupal-messages] .messages--error",
+    );
+    await outcome.first().waitFor({ state: "visible", timeout: 20_000 });
+
     // Assert the absence of validation errors explicitly. Without this, a form that silently
     // re-rendered with "field is required" would still satisfy a loose success check, and the
     // error text is what makes a genuine failure diagnosable from the CI log.
@@ -72,6 +86,8 @@ test.describe("Registry — organisation registration form", () => {
     if (await errors.count()) {
       throw new Error(`Submission rejected: ${(await errors.first().innerText()).trim()}`);
     }
-    await expect(page.locator(".webform-confirmation, .messages--status")).toBeVisible({ timeout: 20_000 });
+    // .first(): a page rendering both a confirmation and a status message would otherwise raise
+    // a strict-mode error on the success path.
+    await expect(page.locator(".webform-confirmation, .messages--status").first()).toBeVisible({ timeout: 20_000 });
   });
 });

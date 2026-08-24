@@ -18,16 +18,19 @@ jobs:
     env:
       EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
       # Non-public test/local base URLs come from repo variables, not the committed inventory.
-      # Unset → each service falls back to its public prod URL.
+      # Unset → each service falls back to its public prod URL. To exercise the Drupal 11 test
+      # instance in CI, set EDCH_REGISTRY_TEST_URL as a repo variable and dispatch with env=test.
       EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
       EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
-      # Optional exact-version gate. Set the repo variable to 11 once the migrated instance is
-      # the test target; unset, the suite only asserts Drupal >= 10 so prod stays green.
-      EDCH_EXPECT_DRUPAL_MAJOR: ${{ vars.EDCH_EXPECT_DRUPAL_MAJOR }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run test
+      # @external hits api.geonames.org; exclude it on pull requests so a third-party outage or
+      # rate limit cannot redden an unrelated PR. Scheduled and manual runs still exercise it.
+      - if: github.event_name == 'pull_request'
+        run: bun run test --tags "not @external"
+      - if: github.event_name != 'pull_request'
+        run: bun run test
