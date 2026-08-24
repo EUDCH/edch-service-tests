@@ -68,22 +68,23 @@ Then("every JSON item has the keys {string}", function (csv) {
 // ── rendered markup ─────────────────────────────────────────────────────────────────────
 
 // Drop <style> and <script> so a CSS selector or a JS string can neither satisfy nor break an
-// assertion about what the page actually renders. This is the corpus every rendered-content
-// assertion below uses, so the two halves of a check never read different corpora.
+// assertion. Kept as its own corpus for the mailto check, which needs the <a href> markup.
 function withoutStyleScript(body) {
   return body.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, "");
 }
 
-// Text content only: strip every tag. Used for address checks so an address sitting in an
-// attribute (a "logo@2x.png" srcset, a mailto href) is not mistaken for rendered contact text.
+// Text content only: strip every tag as well. The corpus for address checks — both the "(at)"
+// presence and the no-raw-address absence use it, so the two halves read the same text — and it
+// keeps an address sitting in an attribute (a "logo@2x.png" srcset, a mailto href) from being
+// mistaken for rendered contact text.
 function renderedText(body) {
   return withoutStyleScript(body).replace(/<[^>]+>/g, " ");
 }
 
-Then("the rendered page contains {string}", function (text) {
+Then("the rendered text contains {string}", function (text) {
   assert.ok(
-    withoutStyleScript(this.response.body).includes(text),
-    `Rendered ${this.response.url} does not contain "${text}"`,
+    renderedText(this.response.body).includes(text),
+    `Rendered text of ${this.response.url} does not contain "${text}"`,
   );
 });
 

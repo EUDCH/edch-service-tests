@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: Environment to test (prod | test | local)
+        description: Environment to test (prod | test)
         type: choice
-        options: [prod, test, local]
+        options: [prod, test]
         default: prod
   schedule:
     - cron: "33 2 * * *" # nightly 02:33 UTC
@@ -35,7 +35,6 @@ jobs:
         env:
           EDCH_ENV: test
           EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
-          EDCH_CAP_TEST_URL: ${{ vars.EDCH_CAP_TEST_URL }}
           EDCH_REGISTRY_TEST_USER: ${{ secrets.EDCH_REGISTRY_TEST_USER }}
           EDCH_REGISTRY_TEST_PASSWORD: ${{ secrets.EDCH_REGISTRY_TEST_PASSWORD }}
       - name: Browser tests (prod / default — read-only, skip writes)

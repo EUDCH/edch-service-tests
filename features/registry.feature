@@ -84,7 +84,7 @@ Feature: EDCH Registry baseline
   Scenario: Contact addresses are obfuscated on the organisations listing
     When I GET "/organisations-view"
     Then the response status is 200
-    And the rendered page contains "(at)"
+    And the rendered text contains "(at)"
     And the response body contains no email address
     And the response body contains no mailto link
 

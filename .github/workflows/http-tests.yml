@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: Environment to test (prod | test | local)
+        description: Environment to test (prod | test)
         type: choice
-        options: [prod, test, local]
+        options: [prod, test]
         default: prod
   schedule:
     - cron: "17 6 * * *" # daily 06:17 UTC
@@ -28,6 +28,8 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      # Enforce the strict tsconfig on the browser .ts files (fast, no browser needed).
+      - run: bun run typecheck
       # @external hits api.geonames.org; exclude it on pull requests so a third-party outage or
       # rate limit cannot redden an unrelated PR. Scheduled and manual runs still exercise it.
       - if: github.event_name == 'pull_request'
