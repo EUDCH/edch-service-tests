@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: Environment to test (prod | test | local)
+        description: Environment to test (prod | test)
         type: choice
-        options: [prod, test, local]
+        options: [prod, test]
         default: prod
   schedule:
     - cron: "33 2 * * *" # nightly 02:33 UTC
@@ -15,8 +15,6 @@ on:
 jobs:
   browser:
     runs-on: ubuntu-latest
-    env:
-      EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -24,4 +22,23 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
-      - run: bun run browser
+      # The @writes submission spec refuses to run against a production host (its guard throws),
+      # so on prod — including the nightly schedule, where github.event.inputs.env is null — run
+      # the read-only browser coverage only. A manual dispatch with env=test runs the write spec.
+      #
+      # Credentials and non-public base URLs live on the test step only, so bun install and
+      # playwright install never have them in their environment (a postinstall script in any
+      # dependency could otherwise read them).
+      - name: Browser tests (test env — all specs)
+        if: github.event.inputs.env == 'test'
+        run: bunx playwright test --config browser/playwright.config.ts
+        env:
+          EDCH_ENV: test
+          EDCH_REGISTRY_TEST_URL: ${{ vars.EDCH_REGISTRY_TEST_URL }}
+          EDCH_REGISTRY_TEST_USER: ${{ secrets.EDCH_REGISTRY_TEST_USER }}
+          EDCH_REGISTRY_TEST_PASSWORD: ${{ secrets.EDCH_REGISTRY_TEST_PASSWORD }}
+      - name: Browser tests (prod / default — read-only, skip writes)
+        if: github.event.inputs.env != 'test'
+        run: bunx playwright test --config browser/playwright.config.ts --grep-invert "@writes"
+        env:
+          EDCH_ENV: ${{ github.event.inputs.env || 'prod' }}
